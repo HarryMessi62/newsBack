@@ -2,7 +2,7 @@ const NewsParser = require('./services/newsParser');
 const mongoose = require('mongoose');
 
 mongoose.connect('mongodb://localhost:27017/backnews');
-
+//
 async function testSmartParser() {
   try {
     const parser = new NewsParser();
