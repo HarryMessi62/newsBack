@@ -1,34 +1,35 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
       "src": "/sitemap.xml",
-      "dest": "/api/server.js"
+      "dest": "/server.js"
     },
     {
       "src": "/robots.txt", 
-      "dest": "/api/server.js"
+      "dest": "/server.js"
     },
     {
       "src": "/api/(.*)",
-      "dest": "/api/server.js"
+      "dest": "/server.js"
     },
     {
       "src": "/uploads/(.*)",
-      "dest": "/api/server.js"
+      "dest": "/server.js"
     },
     {
       "src": "/health",
-      "dest": "/api/server.js"
+      "dest": "/server.js"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/server.js"
+      "dest": "/server.js"
     }
-  ],
-  "functions": {
-    "api/server.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 } 
