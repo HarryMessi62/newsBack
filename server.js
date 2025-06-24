@@ -25,7 +25,7 @@ const swaggerSetup = require('./config/swagger');
 const scheduler = require('./services/scheduler');
 
 const app = express();
-
+app.set('trust proxy', true);
 // Security middleware with CSP configuration for Swagger
 app.use(helmet({
   contentSecurityPolicy: {
