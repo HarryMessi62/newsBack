@@ -120,7 +120,6 @@ router.get('/robots.txt', async (req, res) => {
     const robotsTxt = `User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /api
 Disallow: /uploads
 
 Sitemap: ${baseUrl}/sitemap.xml
