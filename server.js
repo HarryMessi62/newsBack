@@ -40,15 +40,15 @@ app.use(helmet({
 }));
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20000, // increase limit for development
-  skip: (req) => {
-    // Skip rate limiting for localhost during development
-    return process.env.NODE_ENV !== 'production' && req.ip === '127.0.0.1';
-  }
-});
-app.use(limiter);
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 20000, // increase limit for development
+//   skip: (req) => {
+//     // Skip rate limiting for localhost during development
+//     return process.env.NODE_ENV !== 'production' && req.ip === '127.0.0.1';
+//   }
+// });
+// app.use(limiter);
 
 // CORS configuration
 const allowedOrigins = process.env.NODE_ENV === 'production' 
