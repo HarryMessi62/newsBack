@@ -98,7 +98,7 @@ router.get('/sitemap.xml', async (req, res) => {
     res.set({
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600', // Кэш на 1 час
-      'X-Robots-Tag': 'noindex'
+      'X-Robots-Tag': 'index, follow'
     });
     
     res.send(sitemap);
