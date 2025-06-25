@@ -52,7 +52,7 @@ const getPriority = (article) => {
 router.get('/sitemap.xml', async (req, res) => {
   try {
     // Получаем домен из заголовков
-    const host = 'news-front-gilt.vercel.app'
+    const host = '45.150.34.200'
     const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
     const baseUrl = `${protocol}://${host}`;
     
@@ -113,7 +113,7 @@ router.get('/sitemap.xml', async (req, res) => {
 // Роут для robots.txt
 router.get('/robots.txt', async (req, res) => {
   try {
-    const host = req.get('host') || 'localhost';
+    const host = '45.150.34.200';
     const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
     const baseUrl = `${protocol}://${host}`;
     
