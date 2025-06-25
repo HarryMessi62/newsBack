@@ -55,7 +55,8 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [
       process.env.FRONTEND_URL, 
       /\.vercel\.app$/,
-      /\.netlify\.app$/
+      /\.netlify\.app$/,
+      'http://45.150.34.200'
     ]
   : [
       'http://localhost:3001', 
