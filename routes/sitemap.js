@@ -129,7 +129,7 @@ Crawl-delay: 1`;
 
     res.set({
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400' // Кэш на 24 часа
+      'Cache-Control': 'public, max-age=3600' // Кэш на 24 часа
     });
     
     res.send(robotsTxt);
