@@ -56,7 +56,8 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       process.env.FRONTEND_URL, 
       /\.vercel\.app$/,
       /\.netlify\.app$/,
-      'http://45.150.34.200'
+      'http://45.150.34.200',
+      'https://infocryptox.com'
     ]
   : [
       'http://localhost:3001', 
