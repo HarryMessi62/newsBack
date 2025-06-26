@@ -53,7 +53,7 @@ router.get('/sitemap.xml', async (req, res) => {
   try {
     // Получаем домен из заголовков
     const host = 'infocryptox.com'
-    const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+    const protocol = 'https'
     const baseUrl = `${protocol}://${host}`;
     
     console.log(`🗺️ Генерация sitemap для домена: ${baseUrl}`);
@@ -114,7 +114,7 @@ router.get('/sitemap.xml', async (req, res) => {
 router.get('/robots.txt', async (req, res) => {
   try {
     const host = 'infocryptox.com';
-    const protocol = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+    const protocol = 'https'
     const baseUrl = `${protocol}://${host}`;
     
     const robotsTxt = `User-agent: *
