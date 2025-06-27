@@ -102,7 +102,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('combined'));
 
 // Static files with CORS headers
-app.use('/uploads', (req, res, next) => {
+app.use('/api/uploads', (req, res, next) => {
   const origin = req.headers.origin;
   
   // Используем ту же логику что и для основного CORS
