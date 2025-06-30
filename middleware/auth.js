@@ -231,6 +231,22 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
+// Middleware для проверки истечения доступа
+const checkAccessExpiry = (req, res, next) => {
+  // Супер-админов не ограничиваем
+  if (req.user.role === 'super_admin') {
+    return next();
+  }
+
+  if (req.user.accessExpiresAt && new Date() > req.user.accessExpiresAt) {
+    return res.status(403).json({
+      success: false,
+      message: 'Срок доступа истёк. Продлите подписку, чтобы продолжить создавать или редактировать статьи.'
+    });
+  }
+  next();
+};
+
 module.exports = {
   authenticateToken,
   requireSuperAdmin,
@@ -239,5 +255,6 @@ module.exports = {
   canManageArticle,
   checkUserLimits,
   logUserActivity,
-  optionalAuth
+  optionalAuth,
+  checkAccessExpiry
 }; 

@@ -17,12 +17,15 @@ const uploadRoutes = require('./routes/upload');
 const likesRoutes = require('./routes/likes');
 const commentsRoutes = require('./routes/comments');
 const sitemapRoutes = require('./routes/sitemap');
+const cryptoRoutes = require('./routes/crypto');
 
 // Import swagger configuration
 const swaggerSetup = require('./config/swagger');
 
 // Import scheduler for news parsing
 const scheduler = require('./services/scheduler');
+const articlePublisher = require('./services/articlePublisher');
+const cryptoPriceService = require('./services/cryptoPriceService');
 
 const app = express();
 app.set('trust proxy', true);
@@ -139,6 +142,8 @@ mongoose.connect(process.env.MONGODB_URI, {
   if (process.env.NODE_ENV !== 'production') {
     try {
       await scheduler.init();
+      await articlePublisher.init();
+      await cryptoPriceService.init();
     } catch (error) {
       console.error('Ошибка инициализации планировщика:', error);
     }
@@ -160,6 +165,7 @@ app.use('/api/domains', domainRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/likes', likesRoutes);
 app.use('/api/comments', commentsRoutes);
+app.use('/api/crypto', cryptoRoutes);
 
 // Sitemap и robots.txt роуты (без префикса /api)
 app.use('/', sitemapRoutes);
@@ -205,8 +211,10 @@ if (process.env.NODE_ENV !== 'production') {
     console.log(`\n⚡ Получен сигнал ${signal}. Начинаю корректное завершение...`);
     
     try {
-      // Останавливаем планировщик парсера
+      // Останавливаем планировщики
       await scheduler.stop();
+      await articlePublisher.stop();
+      await cryptoPriceService.stop();
       
       // Закрываем соединение с БД
       await mongoose.connection.close();

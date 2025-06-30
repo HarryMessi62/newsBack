@@ -10,7 +10,8 @@ const {
   canAccessDomain, 
   checkUserLimits,
   logUserActivity,
-  optionalAuth 
+  optionalAuth,
+  checkAccessExpiry
 } = require('../middleware/auth');
 
 const router = express.Router();
@@ -953,6 +954,7 @@ router.get('/:slug', optionalAuth, async (req, res) => {
  */
 router.post('/', [
   authenticateToken,
+  checkAccessExpiry,
   checkUserLimits,
   body('title')
     .isLength({ min: 1, max: 200 })
@@ -1049,7 +1051,7 @@ router.post('/', [
       title,
       slug,
       content,
-      excerpt: excerpt || content.substring(0, 200) + '...',
+      ...(excerpt ? { excerpt } : {}),
       category,
       tags,
       hashtags,
@@ -1071,7 +1073,7 @@ router.post('/', [
       },
       seo: {
         metaTitle: seo.metaTitle || title,
-        metaDescription: seo.metaDescription || excerpt,
+        metaDescription: seo.metaDescription || excerpt || content.substring(0, 200) + '...',
         keywords: seo.keywords || tags,
         canonicalUrl: seo.canonicalUrl,
         openGraphImage: seo.openGraphImage
@@ -1150,6 +1152,7 @@ router.get('/:id/edit', authenticateToken, canManageArticle, async (req, res) =>
  */
 router.put('/:id', [
   authenticateToken,
+  checkAccessExpiry,
   canManageArticle,
   body('title')
     .optional()

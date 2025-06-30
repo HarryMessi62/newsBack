@@ -1,0 +1,85 @@
+{
+  "updatedAt": "2025-06-30T07:22:39.852Z",
+  "data": {
+    "BTC": {
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "price": 107625.4387212977,
+      "change24h": 118.38798259342748,
+      "changePercent24h": 0.11,
+      "marketCap": 2140185661692
+    },
+    "ETH": {
+      "symbol": "ETH",
+      "name": "The Ticker Is ETH",
+      "price": 0.00006910236035547309,
+      "change24h": 5.251779387015955e-7,
+      "changePercent24h": 0.76,
+      "marketCap": 69102
+    },
+    "XRP": {
+      "symbol": "XRP",
+      "name": "XRP",
+      "price": 2.179963377315787,
+      "change24h": -0.008719853509263149,
+      "changePercent24h": -0.4,
+      "marketCap": 128629930897
+    },
+    "SOL": {
+      "symbol": "SOL",
+      "name": "Binance-Peg SOL",
+      "price": 150.57821537173493,
+      "change24h": 0.1806938584460819,
+      "changePercent24h": 0.12,
+      "marketCap": 165636037
+    },
+    "DOGE": {
+      "symbol": "DOGE",
+      "name": "Department Of Government Efficiency",
+      "price": 0.010251988166239453,
+      "change24h": 0.0007596723231183435,
+      "changePercent24h": 7.41,
+      "marketCap": 10251988
+    },
+    "TRX": {
+      "symbol": "TRX",
+      "name": "TRON",
+      "price": 0.2778383261471357,
+      "change24h": 0.001694813789497528,
+      "changePercent24h": 0.61,
+      "marketCap": 23995034297
+    },
+    "ADA": {
+      "symbol": "ADA",
+      "name": "Cardano",
+      "price": 0.5641721223917738,
+      "change24h": 0.002651608975241337,
+      "changePercent24h": 0.47,
+      "marketCap": 21391093867
+    },
+    "LINK": {
+      "symbol": "LINK",
+      "name": "Chainlink",
+      "price": 13.30897494897203,
+      "change24h": -0.12776615951013148,
+      "changePercent24h": -0.96,
+      "marketCap": 8342730547
+    },
+    "LTC": {
+      "symbol": "LTC",
+      "name": "Litecoin",
+      "price": 86.35735481045214,
+      "change24h": -0.48360118693853205,
+      "changePercent24h": -0.56,
+      "marketCap": 6525031071
+    },
+    "DOT": {
+      "symbol": "DOT",
+      "name": "Polkadot",
+      "price": 3.446142292831509,
+      "change24h": 0.02860298103050152,
+      "changePercent24h": 0.83,
+      "marketCap": 5208389567
+    }
+  }
+}

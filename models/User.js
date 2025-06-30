@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  accessExpiresAt: {
+    type: Date,
+    default: null
+  },
   // Дополнительные поля для пользовательских админок
   restrictions: {
     maxArticles: {

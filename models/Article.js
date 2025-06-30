@@ -141,6 +141,16 @@ const articleSchema = new mongoose.Schema({
       fake: { type: Number, default: 0 },
       total: { type: Number, default: 0 }
     },
+    // Счетчик реальных просмотров за текущие сутки (сброс при первом просмотре нового дня)
+    todayViews: {
+      type: Number,
+      default: 0
+    },
+    // Дата, для которой актуален счетчик todayViews (храним полночь текущего дня)
+    todayViewsDate: {
+      type: Date,
+      default: null
+    },
     rating: {
       type: Number,
       default: 0,
@@ -262,6 +272,22 @@ articleSchema.methods.incrementViews = async function(fake = false) {
   } else {
     this.stats.views.real += 1;
   }
+
+  // Обновляем счетчик просмотров за текущие сутки
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Полночь
+
+  // Если дата в документе отличается от сегодняшней, сбрасываем дневной счетчик
+  if (!this.stats.todayViewsDate || this.stats.todayViewsDate.getTime() !== today.getTime()) {
+    this.stats.todayViews = 0;
+    this.stats.todayViewsDate = today;
+  }
+
+  // Увеличиваем дневной счетчик (учитываем только реальные просмотры)
+  if (!fake) {
+    this.stats.todayViews += 1;
+  }
+
   this.stats.views.total = this.stats.views.real + this.stats.views.fake;
   await this.save();
 };

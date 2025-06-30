@@ -12,7 +12,19 @@ const router = express.Router();
 
 // Применяем middleware авторизации и проверки супер-админа ко всем маршрутам
 router.use(authenticateToken);
-router.use(requireSuperAdmin);
+
+// Глобальная защита: супер-админ, кроме операций со статьями (stats/likes/comments),
+// которые разрешены также автору статьи.
+router.use((req, res, next) => {
+  const path = req.path;
+  const method = req.method;
+  // Разрешаем обычному админу обращаться к /articles/:id/{stats|likes|comments}
+  const articleManageRegex = /^\/articles\/[^/]+\/(stats|likes|comments)$/;
+  if (articleManageRegex.test(path) && ['PUT', 'POST'].includes(method)) {
+    return next();
+  }
+  return requireSuperAdmin(req, res, next);
+});
 
 /**
  * @swagger
@@ -28,31 +40,43 @@ router.use(requireSuperAdmin);
  */
 router.get('/dashboard', logUserActivity('Просмотр дашборда'), async (req, res) => {
   try {
-    // Получаем общую статистику
-    const totalUsers = await User.countDocuments({ role: 'user_admin' });
-    const activeUsers = await User.countDocuments({ role: 'user_admin', isActive: true });
-    const totalArticles = await Article.countDocuments();
-    const publishedArticles = await Article.countDocuments({ status: 'published' });
+    const isSuperAdmin = req.user.role === 'super_admin';
+    
+    // Получаем общую статистику (для супер-админа все, для обычного - только свои)
+    let totalUsers, activeUsers, totalArticles, publishedArticles;
+    
+    if (isSuperAdmin) {
+      totalUsers = await User.countDocuments({ role: 'user_admin' });
+      activeUsers = await User.countDocuments({ role: 'user_admin', isActive: true });
+      totalArticles = await Article.countDocuments();
+      publishedArticles = await Article.countDocuments({ status: 'published' });
+    } else {
+      // Для обычного админа показываем только статистику по его статьям
+      totalUsers = 1; // Он сам
+      activeUsers = 1;
+      totalArticles = await Article.countDocuments({ author: req.user._id });
+      publishedArticles = await Article.countDocuments({ author: req.user._id, status: 'published' });
+    }
+    
     const totalDomains = await Domain.countDocuments();
     const activeDomains = await Domain.countDocuments({ isActive: true });
 
-    // Просмотры за сегодня
+    // Просмотры, совершённые за сегодняшний день
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const matchCondition = {
+      status: 'published',
+      ...(isSuperAdmin ? {} : { author: req.user._id }),
+      'stats.todayViewsDate': { $gte: today }
+    };
 
     const todayViewsStats = await Article.aggregate([
-      {
-        $match: {
-          status: 'published',
-          publishedAt: { $gte: today, $lt: tomorrow }
-        }
-      },
+      { $match: matchCondition },
       {
         $group: {
           _id: null,
-          totalViews: { $sum: '$stats.views.total' }
+          totalViews: { $sum: '$stats.todayViews' }
         }
       }
     ]);
@@ -63,17 +87,21 @@ router.get('/dashboard', logUserActivity('Просмотр дашборда'), a
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     
-    const newUsersLastMonth = await User.countDocuments({
+    const newUsersLastMonth = isSuperAdmin ? await User.countDocuments({
       role: 'user_admin',
       createdAt: { $gte: lastMonth }
-    });
+    }) : 0;
 
     const newArticlesLastMonth = await Article.countDocuments({
-      createdAt: { $gte: lastMonth }
+      createdAt: { $gte: lastMonth },
+      ...(isSuperAdmin ? {} : { author: req.user._id })
     });
 
-    // Топ-5 авторов по количеству статей
-    const topAuthors = await User.aggregate([
+    // Топ-5 авторов по количеству статей (для обычного админа только он сам)
+    let topAuthors;
+    
+    if (isSuperAdmin) {
+      topAuthors = await User.aggregate([
       { $match: { role: 'user_admin' } },
       {
         $lookup: {
@@ -95,6 +123,18 @@ router.get('/dashboard', logUserActivity('Просмотр дашборда'), a
       { $sort: { articleCount: -1 } },
       { $limit: 5 }
     ]);
+    } else {
+      // Для обычного админа показываем только его статистику
+      const userArticleCount = await Article.countDocuments({ author: req.user._id });
+      topAuthors = [{
+        _id: req.user._id,
+        username: req.user.username,
+        email: req.user.email,
+        articleCount: userArticleCount,
+        stats: req.user.stats,
+        createdAt: req.user.createdAt
+      }];
+    }
 
     // Топ-5 доменов по количеству статей
     const topDomains = await Domain.aggregate([
@@ -120,12 +160,19 @@ router.get('/dashboard', logUserActivity('Просмотр дашборда'), a
     ]);
 
     // Статистика просмотров по месяцам (последние 12 месяцев)
+    const yearAgo = new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+    const monthlyMatchCondition = {
+          status: 'published',
+      publishedAt: { $gte: yearAgo }
+    };
+    
+    if (!isSuperAdmin) {
+      monthlyMatchCondition.author = req.user._id;
+    }
+    
     const monthlyViewsStats = await Article.aggregate([
       {
-        $match: {
-          status: 'published',
-          publishedAt: { $gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) }
-        }
+        $match: monthlyMatchCondition
       },
       {
         $group: {
@@ -139,8 +186,10 @@ router.get('/dashboard', logUserActivity('Просмотр дашборда'), a
       { $sort: { '_id.year': 1, '_id.month': 1 } }
     ]);
 
-    // Последние статьи (5 штук)
-    const recentArticles = await Article.find()
+    // Последние статьи (5 штук) - для обычного админа только его статьи
+    const recentArticlesQuery = isSuperAdmin ? {} : { author: req.user._id };
+    
+    const recentArticles = await Article.find(recentArticlesQuery)
       .populate('author', 'username email')
       .populate('domain', 'name url')
       .sort({ createdAt: -1 })
@@ -328,7 +377,7 @@ router.post('/users', [
       });
     }
 
-    const { username, email, password, restrictions, profile } = req.body;
+    const { username, email, password, restrictions, profile, accessExpiresAt } = req.body;
 
     // Проверка существования пользователя
     const existingUser = await User.findOne({
@@ -355,7 +404,8 @@ router.post('/users', [
         canDelete: restrictions?.canDelete !== undefined ? restrictions.canDelete : true,
         canEdit: restrictions?.canEdit !== undefined ? restrictions.canEdit : true,
         allowedDomains: restrictions?.allowedDomains || []
-      }
+      },
+      accessExpiresAt: accessExpiresAt ? new Date(accessExpiresAt) : null
     };
 
     const user = new User(userData);
@@ -396,7 +446,10 @@ router.post('/users', [
 router.put('/users/:id', logUserActivity('Обновление пользователя'), async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(updateData, 'accessExpiresAt')) {
+      updateData.accessExpiresAt = updateData.accessExpiresAt ? new Date(updateData.accessExpiresAt) : null;
+    }
 
     // Удаляем поля, которые нельзя обновлять
     delete updateData.password;
@@ -415,6 +468,8 @@ router.put('/users/:id', logUserActivity('Обновление пользова�
         message: 'Пользователь не найден'
       });
     }
+
+    await user.save();
 
     res.json({
       success: true,
@@ -528,11 +583,19 @@ router.get('/articles', async (req, res) => {
     const limit = parseInt(req.query.limit) || 100; // Увеличиваем лимит по умолчанию
     const skip = (page - 1) * limit;
     const { status, author, domain, search } = req.query;
+    const isSuperAdmin = req.user.role === 'super_admin';
 
     const query = {};
     
-    if (status) query.status = status;
+    // Если обычный админ - показываем только его статьи
+    if (!isSuperAdmin) {
+      query.author = req.user._id;
+    } else {
+      // Супер-админ может фильтровать по автору
     if (author) query.author = author;
+    }
+    
+    if (status) query.status = status;
     if (domain) query.domain = domain;
     
     if (search) {
@@ -590,6 +653,14 @@ router.delete('/articles/:id', logUserActivity('Удаление статьи'),
       return res.status(404).json({
         success: false,
         message: 'Статья не найдена'
+      });
+    }
+
+    // Проверяем право автора для обычного админа
+    if (req.user.role !== 'super_admin' && article.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Недостаточно прав для управления этой статьёй'
       });
     }
 
@@ -1437,5 +1508,255 @@ router.post('/parser/toggle',
     }
   }
 );
+
+/**
+ * @swagger
+ * /admin/articles/{id}/stats:
+ *   put:
+ *     tags: [Admin]
+ *     summary: Обновление статистики статьи
+ */
+router.put('/articles/:id/stats', logUserActivity('Обновление статистики статьи'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { likes, comments } = req.body;
+
+    const article = await Article.findById(id);
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: 'Статья не найдена'
+      });
+    }
+
+    // Проверяем право автора для обычного админа
+    if (req.user.role !== 'super_admin' && article.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Недостаточно прав для управления этой статьёй'
+      });
+    }
+
+    // Обновляем лайки
+    if (likes) {
+      if (typeof likes.total === 'number') {
+        article.stats.likes.total = Math.max(0, likes.total);
+        // Устанавливаем fake равным total, а real = 0 для простоты
+        article.stats.likes.fake = article.stats.likes.total;
+        article.stats.likes.real = 0;
+      } else {
+        // Поддерживаем старый формат для совместимости
+        if (typeof likes.real === 'number') {
+          article.stats.likes.real = Math.max(0, likes.real);
+        }
+        if (typeof likes.fake === 'number') {
+          article.stats.likes.fake = Math.max(0, likes.fake);
+        }
+        article.stats.likes.total = article.stats.likes.real + article.stats.likes.fake;
+      }
+    }
+
+    // Обновляем комментарии
+    if (comments) {
+      if (typeof comments.real === 'number') {
+        article.stats.comments.real = Math.max(0, comments.real);
+      }
+      if (typeof comments.fake === 'number') {
+        article.stats.comments.fake = Math.max(0, comments.fake);
+      }
+      article.stats.comments.total = article.stats.comments.real + article.stats.comments.fake;
+    }
+
+    await article.save();
+
+    res.json({
+      success: true,
+      message: 'Статистика обновлена',
+      data: { 
+        stats: article.stats 
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка обновления статистики:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Внутренняя ошибка сервера'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /admin/articles/{id}/likes:
+ *   put:
+ *     tags: [Admin]
+ *     summary: Обновление лайков статьи
+ */
+router.put('/articles/:id/likes', logUserActivity('Обновление лайков статьи'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { real, fake } = req.body;
+
+    const article = await Article.findById(id);
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: 'Статья не найдена'
+      });
+    }
+
+    // Проверяем право автора для обычного админа
+    if (req.user.role !== 'super_admin' && article.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Недостаточно прав для управления этой статьёй'
+      });
+    }
+
+    if (typeof real === 'number') {
+      article.stats.likes.real = Math.max(0, real);
+    }
+    if (typeof fake === 'number') {
+      article.stats.likes.fake = Math.max(0, fake);
+    }
+    
+    article.stats.likes.total = article.stats.likes.real + article.stats.likes.fake;
+    await article.save();
+
+    res.json({
+      success: true,
+      message: 'Лайки обновлены',
+      data: { 
+        likes: article.stats.likes 
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка обновления лайков:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Внутренняя ошибка сервера'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /admin/articles/{id}/comments:
+ *   post:
+ *     tags: [Admin]
+ *     summary: Добавление комментария от админа
+ */
+router.post('/articles/:id/comments', logUserActivity('Добавление комментария'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userEmail, text } = req.body;
+
+    if (!userEmail || !text) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email и текст комментария обязательны'
+      });
+    }
+
+    const article = await Article.findById(id);
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        message: 'Статья не найдена'
+      });
+    }
+
+    // Проверяем право автора для обычного админа
+    if (req.user.role !== 'super_admin' && article.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Недостаточно прав для управления этой статьёй'
+      });
+    }
+
+    const Comment = require('../models/Comment');
+    
+    // Генерируем уникальный userId для админского комментария
+    const adminUserId = `admin_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const comment = await Comment.create({
+      article: id,
+      userId: adminUserId,
+      userEmail,
+      text: text.trim(),
+      ipAddress: req.ip || 'admin',
+      userAgent: 'Admin Panel'
+    });
+
+    // Обновляем счетчик комментариев в статье
+    article.stats.comments.fake += 1;
+    article.stats.comments.total += 1;
+    await article.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Комментарий добавлен',
+      data: { comment }
+    });
+  } catch (error) {
+    console.error('Ошибка добавления комментария:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Внутренняя ошибка сервера'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /admin/comments/{id}:
+ *   delete:
+ *     tags: [Admin]
+ *     summary: Удаление комментария
+ */
+router.delete('/comments/:id', logUserActivity('Удаление комментария'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const Comment = require('../models/Comment');
+    const comment = await Comment.findById(id);
+    
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Комментарий не найден'
+      });
+    }
+
+    // Обновляем счетчик в статье
+    const article = await Article.findById(comment.article);
+    if (article) {
+      // Определяем, это реальный или фейковый комментарий
+      const isAdminComment = comment.userId.startsWith('admin_');
+      
+      if (isAdminComment) {
+        article.stats.comments.fake = Math.max(0, article.stats.comments.fake - 1);
+      } else {
+        article.stats.comments.real = Math.max(0, article.stats.comments.real - 1);
+      }
+      
+      article.stats.comments.total = Math.max(0, article.stats.comments.total - 1);
+      await article.save();
+    }
+
+    await Comment.findByIdAndDelete(id);
+
+    res.json({
+      success: true,
+      message: 'Комментарий удален'
+    });
+  } catch (error) {
+    console.error('Ошибка удаления комментария:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Внутренняя ошибка сервера'
+    });
+  }
+});
 
 module.exports = router; 

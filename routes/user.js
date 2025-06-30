@@ -118,6 +118,12 @@ router.get('/dashboard', logUserActivity('Просмотр пользовате�
       { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
     ]);
 
+    let daysRemaining = null;
+    if (req.user.accessExpiresAt) {
+      const diffMs = req.user.accessExpiresAt - Date.now();
+      daysRemaining = Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+    }
+
     res.json({
       success: true,
       data: {
@@ -135,7 +141,8 @@ router.get('/dashboard', logUserActivity('Просмотр пользовате�
           restrictions: req.user.restrictions,
           allowedDomains: req.user.restrictions.allowedDomains.length,
           maxArticles: req.user.restrictions.maxArticles,
-          articlesRemaining: Math.max(0, req.user.restrictions.maxArticles - totalArticles)
+          articlesRemaining: Math.max(0, req.user.restrictions.maxArticles - totalArticles),
+          daysRemaining
         }
       }
     });
