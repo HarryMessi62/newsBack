@@ -644,6 +644,17 @@ class NewsParser {
         }
       }
 
+      // ---- Генерируем начальные фейковые просмотры/лайки по диапазону ----
+      const rangeOrDefault = (range) => {
+        const min = Number(range?.min ?? 0);
+        const max = Number(range?.max ?? 0);
+        if (max <= min) return min;
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      };
+
+      const fakeViews = rangeOrDefault(this.settings?.initialStats?.views);
+      const fakeLikes = rangeOrDefault(this.settings?.initialStats?.likes);
+
       const article = new Article({
         title: articleData.title,
         slug: slug,
@@ -656,6 +667,12 @@ class NewsParser {
         publishedAt: this.settings?.publishing?.autoPublish ? new Date() : null,
         author: authorId,
         domain: domainId,
+        stats: {
+          views: { fake: fakeViews, real: 0, total: fakeViews },
+          likes: { fake: fakeLikes, real: 0, total: fakeLikes },
+          comments: { fake: 0, real: 0, total: 0 },
+          shares: { fake: 0, real: 0, total: 0 }
+        },
         seo: {
           metaTitle: articleData.title,
           metaDescription: articleData.excerpt,

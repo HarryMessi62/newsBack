@@ -1519,7 +1519,7 @@ router.post('/parser/toggle',
 router.put('/articles/:id/stats', logUserActivity('Обновление статистики статьи'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { likes, comments } = req.body;
+    const { likes, comments, views } = req.body;
 
     const article = await Article.findById(id);
     if (!article) {
@@ -1565,6 +1565,25 @@ router.put('/articles/:id/stats', logUserActivity('Обновление стат
         article.stats.comments.fake = Math.max(0, comments.fake);
       }
       article.stats.comments.total = article.stats.comments.real + article.stats.comments.fake;
+    }
+
+    // Обновляем просмотры
+    if (views) {
+      if (typeof views.total === 'number') {
+        article.stats.views.total = Math.max(0, views.total);
+        // Устанавливаем fake равным total, а real = 0 для простоты
+        article.stats.views.fake = article.stats.views.total;
+        article.stats.views.real = 0;
+      } else {
+        // Поддерживаем старый формат для совместимости
+        if (typeof views.real === 'number') {
+          article.stats.views.real = Math.max(0, views.real);
+        }
+        if (typeof views.fake === 'number') {
+          article.stats.views.fake = Math.max(0, views.fake);
+        }
+        article.stats.views.total = article.stats.views.real + article.stats.views.fake;
+      }
     }
 
     await article.save();

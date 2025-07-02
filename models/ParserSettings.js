@@ -195,6 +195,34 @@ const parserSettingsSchema = new mongoose.Schema({
     defaultTags: [String]
   },
   
+  // Диапазоны для начальной (фейковой) статистики статей
+  initialStats: {
+    views: {
+      min: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      max: {
+        type: Number,
+        default: 0,
+        min: 0
+      }
+    },
+    likes: {
+      min: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      max: {
+        type: Number,
+        default: 0,
+        min: 0
+      }
+    }
+  },
+  
   // Статистика работы парсера
   stats: {
     totalParsed: {

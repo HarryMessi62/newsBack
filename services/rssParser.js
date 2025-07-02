@@ -688,6 +688,17 @@ class RSSParser {
       // Выбираем первый доступный домен
       const selectedDomain = domains[0];
       
+      // ---- Генерируем начальные фейковые просмотры/лайки по диапазону ----
+      const rangeOrDefault = (range) => {
+        const min = Number(range?.min ?? 0);
+        const max = Number(range?.max ?? 0);
+        if (max <= min) return min;
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      };
+
+      const fakeViews = rangeOrDefault(settings?.initialStats?.views);
+      const fakeLikes = rangeOrDefault(settings?.initialStats?.likes);
+
       const article = new Article({
         title: articleData.title,
         slug: articleData.slug,
@@ -701,7 +712,13 @@ class RSSParser {
         publishedAt: articleData.publishedAt,
         media: articleData.media || {},
         source: articleData.source,
-        tags: articleData.tags || []
+        tags: articleData.tags || [],
+        stats: {
+          views: { fake: fakeViews, real: 0, total: fakeViews },
+          likes: { fake: fakeLikes, real: 0, total: fakeLikes },
+          comments: { fake: 0, real: 0, total: 0 },
+          shares: { fake: 0, real: 0, total: 0 }
+        }
       });
 
       const savedArticle = await article.save();
