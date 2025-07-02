@@ -77,7 +77,8 @@ router.get('/sitemap.xml', async (req, res) => {
     // Получаем статьи для данного домена
     let query = { 
       status: 'published',
-      publishedAt: { $lte: new Date() }
+      publishedAt: { $lte: new Date() },
+      isParsed: { $ne: true }
     };
     
     if (domain) {

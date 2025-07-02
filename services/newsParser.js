@@ -667,6 +667,7 @@ class NewsParser {
         publishedAt: this.settings?.publishing?.autoPublish ? new Date() : null,
         author: authorId,
         domain: domainId,
+        isParsed: true,
         stats: {
           views: { fake: fakeViews, real: 0, total: fakeViews },
           likes: { fake: fakeLikes, real: 0, total: fakeLikes },

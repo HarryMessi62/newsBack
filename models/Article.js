@@ -107,6 +107,13 @@ const articleSchema = new mongoose.Schema({
     default: null
   },
   
+  // ⬇️ Новый флаг: статья получена парсером
+  isParsed: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  
   // Автор и домен
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -214,6 +221,9 @@ articleSchema.index({ publishedAt: -1 });
 articleSchema.index({ 'stats.views.total': -1 });
 articleSchema.index({ tags: 1 });
 articleSchema.index({ title: 'text', content: 'text' });
+
+// Индекс для быстрого фильтра по парсенным статьям
+articleSchema.index({ isParsed: 1 });
 
 // Виртуальные поля
 articleSchema.virtual('url').get(function() {

@@ -708,6 +708,7 @@ class RSSParser {
         status: 'published', // RSS статьи публикуем сразу
         author: defaultAuthor._id,
         domain: selectedDomain._id,
+        isParsed: true,
         sourceUrl: articleData.sourceUrl,
         publishedAt: articleData.publishedAt,
         media: articleData.media || {},
