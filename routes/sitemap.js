@@ -81,16 +81,25 @@ router.get('/sitemap.xml', async (req, res) => {
       publishedAt: { $lte: new Date() },
       isParsed: { $ne: true }
     };
+    let query2 = { 
+      status: 'published',
+      publishedAt: { $lte: new Date() },
+    };
     
     if (domain) {
       query.domain = domain._id;
+    }
+    if (domain) {
+      query2.domain = domain._id;
     }
     
     const PER_PAGE = 12; // Должен совпадать с фронтом
 
     // Считаем общее количество статей для расчёта пагинации
-    const totalArticles = await Article.countDocuments(query);
+
+    const totalArticles = await Article.countDocuments(query2);
     const totalPages = Math.ceil(totalArticles / PER_PAGE);
+    console.log(totalPages, totalArticles)
 
     // Получаем статьи (ограничив 5000 для производительности)
     const articles = await Article.find(query)
