@@ -356,6 +356,7 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     // Сортировка
+    // По умолчанию выводим самые новые статьи по дате публикации
     let sortOption = { publishedAt: -1 };
     switch (sort) {
       case 'popular':
@@ -367,7 +368,7 @@ router.get('/', optionalAuth, async (req, res) => {
       case 'oldest':
         sortOption = { publishedAt: 1 };
         break;
-      default:
+      default: // 'newest' и любой другой вариант
         sortOption = { publishedAt: -1 };
     }
 

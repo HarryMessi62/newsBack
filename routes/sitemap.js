@@ -4,7 +4,7 @@ const Article = require('../models/Article');
 const Domain = require('../models/Domain');
 
 // Генератор sitemap
-const generateSitemap = (articles, baseUrl) => {
+const generateSitemap = (articles, baseUrl, listPagesXml = '') => {
   const urls = articles.map(article => {
     const lastmod = article.updatedAt ? article.updatedAt.toISOString() : article.publishedAt.toISOString();
     const priority = getPriority(article);
@@ -31,6 +31,7 @@ const generateSitemap = (articles, baseUrl) => {
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
+${listPagesXml}
 ${urls}
 </urlset>`;
 };
@@ -85,15 +86,28 @@ router.get('/sitemap.xml', async (req, res) => {
       query.domain = domain._id;
     }
     
+    const PER_PAGE = 12; // Должен совпадать с фронтом
+
+    // Считаем общее количество статей для расчёта пагинации
+    const totalArticles = await Article.countDocuments(query);
+    const totalPages = Math.ceil(totalArticles / PER_PAGE);
+
+    // Получаем статьи (ограничив 5000 для производительности)
     const articles = await Article.find(query)
       .select('slug title publishedAt updatedAt category')
       .sort({ publishedAt: -1 })
-      .limit(5000); // Ограничиваем для производительности
+      .limit(5000);
+
+    // Формируем XML для страниц списка статей, начиная со 2-й (первая /articles уже добавлена выше)
+    let listPagesXml = '';
+    for (let p = 2; p <= totalPages; p++) {
+      listPagesXml += `  <url>\n    <loc>${baseUrl}/articles?page=${p}</loc>\n    <lastmod>${new Date().toISOString()}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+    }
     
     console.log(`📄 Найдено ${articles.length} статей для sitemap`);
     
     // Генерируем sitemap
-    const sitemap = generateSitemap(articles, baseUrl);
+    const sitemap = generateSitemap(articles, baseUrl, listPagesXml);
     
     // Устанавливаем правильные заголовки
     res.set({
