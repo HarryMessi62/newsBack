@@ -121,7 +121,10 @@ router.get('/sitemap.xml', async (req, res) => {
     // Устанавливаем правильные заголовки
     res.set({
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600', // Кэш на 1 час
+      // Полностью отключаем кеширование
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       'X-Robots-Tag': 'index, follow'
     });
     
