@@ -13,6 +13,7 @@ const {
   optionalAuth,
   checkAccessExpiry
 } = require('../middleware/auth');
+const resolveDomain = require('../middleware/domainResolver');
 
 const router = express.Router();
 
@@ -49,7 +50,7 @@ const router = express.Router();
  *       500:
  *         description: Внутренняя ошибка сервера
  */
-router.get('/meta/categories', async (req, res) => {
+router.get('/meta/categories', resolveDomain, async (req, res) => {
   try {
     const categories = [
       'Crypto', 'Cryptocurrencies', 'Bitcoin', 'Ethereum',
@@ -59,12 +60,19 @@ router.get('/meta/categories', async (req, res) => {
     ];
 
     // Получаем статистику по категориям
+    const matchQuery = {
+      status: 'published',
+      publishedAt: { $lte: new Date() }
+    };
+
+    // Фильтрация по текущему домену
+    if (req.currentDomain) {
+      matchQuery.domain = { $in: [req.currentDomain._id] };
+    }
+
     const categoryStats = await Article.aggregate([
       {
-        $match: {
-          status: 'published',
-          publishedAt: { $lte: new Date() }
-        }
+        $match: matchQuery
       },
       {
         $group: {
@@ -130,14 +138,21 @@ router.get('/meta/categories', async (req, res) => {
  *                       items:
  *                         $ref: '#/components/schemas/Article'
  */
-router.get('/meta/popular', async (req, res) => {
+router.get('/meta/popular', resolveDomain, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
 
-    const articles = await Article.find({
+    const query = {
       status: 'published',
       publishedAt: { $lte: new Date() }
-    })
+    };
+
+    // Фильтрация по текущему домену
+    if (req.currentDomain) {
+      query.domain = { $in: [req.currentDomain._id] };
+    }
+
+    const articles = await Article.find(query)
       .populate('author', 'username profile')
       .populate('domain', 'name url')
       .sort({ 'stats.views.total': -1 })
@@ -327,7 +342,7 @@ router.get('/my/list', authenticateToken, async (req, res) => {
  *                         pages:
  *                           type: integer
  */
-router.get('/', optionalAuth, async (req, res) => {
+router.get('/', resolveDomain, optionalAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -339,12 +354,15 @@ router.get('/', optionalAuth, async (req, res) => {
       publishedAt: { $lte: new Date() }
     };
 
-    if (category) {
-      query.category = category;
+    // Фильтрация по текущему домену (приоритет над параметром domain)
+    if (req.currentDomain) {
+      query.domain = { $in: [req.currentDomain._id] };
+    } else if (domain) {
+      query.domain = { $in: [domain] };
     }
 
-    if (domain) {
-      query.domain = domain;
+    if (category) {
+      query.category = category;
     }
 
     if (search) {
@@ -464,14 +482,21 @@ router.get('/', optionalAuth, async (req, res) => {
  *       200:
  *         description: Последние статьи успешно получены
  */
-router.get('/latest', async (req, res) => {
+router.get('/latest', resolveDomain, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
 
-    const articles = await Article.find({
+    const query = {
       status: 'published',
       publishedAt: { $lte: new Date() }
-    })
+    };
+
+    // Фильтрация по текущему домену
+    if (req.currentDomain) {
+      query.domain = { $in: [req.currentDomain._id] };
+    }
+
+    const articles = await Article.find(query)
       .populate('author', 'username profile')
       .populate('domain', 'name url')
       .sort({ publishedAt: -1 })
@@ -508,14 +533,21 @@ router.get('/latest', async (req, res) => {
  *       200:
  *         description: Рекомендуемые статьи успешно получены
  */
-router.get('/featured', async (req, res) => {
+router.get('/featured', resolveDomain, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
 
-    const articles = await Article.find({
+    const query = {
       status: 'published',
       publishedAt: { $lte: new Date() }
-    })
+    };
+
+    // Фильтрация по текущему домену
+    if (req.currentDomain) {
+      query.domain = { $in: [req.currentDomain._id] };
+    }
+
+    const articles = await Article.find(query)
       .populate('author', 'username profile')
       .populate('domain', 'name url')
       .sort({ 'stats.views.total': -1, publishedAt: -1 })
@@ -565,7 +597,7 @@ router.get('/featured', async (req, res) => {
  *       200:
  *         description: Статьи категории успешно получены
  */
-router.get('/category/:category', async (req, res) => {
+router.get('/category/:category', resolveDomain, async (req, res) => {
   try {
     const { category } = req.params;
     const page = parseInt(req.query.page) || 1;
@@ -577,6 +609,11 @@ router.get('/category/:category', async (req, res) => {
       publishedAt: { $lte: new Date() },
       category: category
     };
+
+    // Фильтрация по текущему домену
+    if (req.currentDomain) {
+      query.domain = { $in: [req.currentDomain._id] };
+    }
 
     const articles = await Article.find(query)
       .populate('author', 'username profile')
@@ -636,7 +673,7 @@ router.get('/category/:category', async (req, res) => {
  *       200:
  *         description: Результаты поиска успешно получены
  */
-router.get('/search', async (req, res) => {
+router.get('/search', resolveDomain, async (req, res) => {
   try {
     const { q: searchQuery } = req.query;
     const page = parseInt(req.query.page) || 1;
@@ -660,6 +697,11 @@ router.get('/search', async (req, res) => {
         { tags: { $in: [new RegExp(searchQuery, 'i')] } }
       ]
     };
+
+    // Фильтрация по текущему домену
+    if (req.currentDomain) {
+      query.domain = { $in: [req.currentDomain._id] };
+    }
 
     const articles = await Article.find(query)
       .populate('author', 'username profile')
@@ -757,15 +799,22 @@ router.post('/id/:id/view', optionalAuth, async (req, res) => {
   }
 });
 
-router.get('/:slug', optionalAuth, async (req, res) => {
+router.get('/:slug', resolveDomain, optionalAuth, async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const article = await Article.findOne({ 
+    const query = { 
       slug,
       status: 'published',
       publishedAt: { $lte: new Date() }
-    })
+    };
+
+    // Фильтрация по текущему домену
+    if (req.currentDomain) {
+      query.domain = { $in: [req.currentDomain._id] };
+    }
+
+    const article = await Article.findOne(query)
       .populate('author', 'username profile')
       .populate('domain', 'name url settings')
       .populate('relatedArticles', 'title slug excerpt media.featuredImage stats.views.total publishedAt');
@@ -841,9 +890,12 @@ router.get('/:slug', optionalAuth, async (req, res) => {
  *                   type: string
  *                 example: ["#bitcoin", "#crypto"]
  *               domain:
- *                 type: string
- *                 format: objectid
- *                 example: "507f1f77bcf86cd799439011"
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: objectid
+ *                 minItems: 1
+ *                 example: ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439012"]
  *               formatting:
  *                 type: object
  *                 properties:
@@ -967,6 +1019,9 @@ router.post('/', [
     .isIn(['Crypto', 'Cryptocurrencies', 'Bitcoin', 'Ethereum', 'Technology', 'Politics', 'Economy', 'Sports', 'Entertainment', 'Science', 'Health', 'Business', 'World', 'Local', 'Opinion', 'Other'])
     .withMessage('Неверная категория'),
   body('domain')
+    .isArray({ min: 1 })
+    .withMessage('Необходимо указать хотя бы один домен'),
+  body('domain.*')
     .isMongoId()
     .withMessage('Неверный ID домена')
 ], logUserActivity('Создание статьи'), async (req, res) => {
@@ -996,20 +1051,24 @@ router.post('/', [
       scheduling = {}
     } = req.body;
 
-    // Проверяем доступ к домену
-    if (!req.user.canAccessDomain(domain)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Нет доступа к указанному домену'
-      });
+    // Проверяем доступ ко всем доменам
+    for (const domainId of domain) {
+      if (!req.user.canAccessDomain(domainId)) {
+        return res.status(403).json({
+          success: false,
+          message: `Нет доступа к домену ${domainId}`
+        });
+      }
     }
 
-    // Проверяем существование домена
-    const targetDomain = await Domain.findById(domain);
-    if (!targetDomain) {
+    // Проверяем существование всех доменов
+    const targetDomains = await Domain.find({ _id: { $in: domain } });
+    if (targetDomains.length !== domain.length) {
+      const foundDomainIds = targetDomains.map(d => d._id.toString());
+      const missingDomains = domain.filter(id => !foundDomainIds.includes(id));
       return res.status(404).json({
         success: false,
-        message: 'Домен не найден'
+        message: `Домены не найдены: ${missingDomains.join(', ')}`
       });
     }
 
@@ -1166,7 +1225,15 @@ router.put('/:id', [
   body('category')
     .optional()
     .isIn(['Crypto', 'Cryptocurrencies', 'Bitcoin', 'Ethereum', 'Technology', 'Politics', 'Economy', 'Sports', 'Entertainment', 'Science', 'Health', 'Business', 'World', 'Local', 'Opinion', 'Other'])
-    .withMessage('Неверная категория')
+    .withMessage('Неверная категория'),
+  body('domain')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('Необходимо указать хотя бы один домен'),
+  body('domain.*')
+    .optional()
+    .isMongoId()
+    .withMessage('Неверный ID домена')
 ], logUserActivity('Редактирование статьи'), async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -1202,6 +1269,29 @@ router.put('/:id', [
         }
       }
       delete updateData.scheduling;
+    }
+
+    // Проверяем доступ к доменам при обновлении
+    if (updateData.domain) {
+      for (const domainId of updateData.domain) {
+        if (!req.user.canAccessDomain(domainId)) {
+          return res.status(403).json({
+            success: false,
+            message: `Нет доступа к домену ${domainId}`
+          });
+        }
+      }
+
+      // Проверяем существование всех доменов
+      const targetDomains = await Domain.find({ _id: { $in: updateData.domain } });
+      if (targetDomains.length !== updateData.domain.length) {
+        const foundDomainIds = targetDomains.map(d => d._id.toString());
+        const missingDomains = updateData.domain.filter(id => !foundDomainIds.includes(id));
+        return res.status(404).json({
+          success: false,
+          message: `Домены не найдены: ${missingDomains.join(', ')}`
+        });
+      }
     }
 
     // Обновляем информацию о редактировании

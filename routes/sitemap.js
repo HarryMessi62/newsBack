@@ -52,9 +52,11 @@ const getPriority = (article) => {
 // Роут для sitemap.xml
 router.get('/sitemap.xml', async (req, res) => {
   try {
-    // Получаем домен из заголовков
-    const host = 'infocryptox.com'
-    const protocol = 'https'
+    // Определяем домен и протокол из заголовков запроса
+    const hostHeader = req.headers['x-forwarded-host'] || req.headers.host;
+    const protocolHeader = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+    const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+    const protocol = Array.isArray(protocolHeader) ? protocolHeader[0] : protocolHeader;
     const baseUrl = `${protocol}://${host}`;
     
     console.log(`🗺️ Генерация sitemap для домена: ${baseUrl}`);
@@ -140,8 +142,10 @@ router.get('/sitemap.xml', async (req, res) => {
 // Роут для robots.txt
 router.get('/robots.txt', async (req, res) => {
   try {
-    const host = 'infocryptox.com';
-    const protocol = 'https'
+    const hostHeader = req.headers['x-forwarded-host'] || req.headers.host;
+    const protocolHeader = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+    const host = Array.isArray(hostHeader) ? hostHeader[0] : hostHeader;
+    const protocol = Array.isArray(protocolHeader) ? protocolHeader[0] : protocolHeader;
     const baseUrl = `${protocol}://${host}`;
     
     const robotsTxt = `User-agent: *
@@ -149,10 +153,7 @@ Allow: /
 Disallow: /admin
 Disallow: /uploads
 
-Sitemap: ${baseUrl}/sitemap.xml
-
-# Crawl-delay для вежливого сканирования
-Crawl-delay: 1`;
+Sitemap: ${baseUrl}/sitemap.xml`;
 
     res.set({
       'Content-Type': 'text/plain; charset=utf-8',

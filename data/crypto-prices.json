@@ -1,85 +1,85 @@
 {
-  "updatedAt": "2025-07-07T06:00:00.192Z",
+  "updatedAt": "2025-08-06T06:00:00.355Z",
   "data": {
     "BTC": {
       "symbol": "BTC",
-      "name": "Bobby The Cat",
-      "price": 0.003366660842658258,
-      "change24h": 0,
-      "changePercent24h": 0,
-      "marketCap": 3366636
+      "name": "Bitcoin",
+      "price": 114207.74161911067,
+      "change24h": 22.841548323822135,
+      "changePercent24h": 0.02,
+      "marketCap": 2273026658454
     },
     "ETH": {
       "symbol": "ETH",
       "name": "Ethereum",
-      "price": 2572.703678346039,
-      "change24h": 51.454073566920776,
-      "changePercent24h": 2,
-      "marketCap": 309821226143
+      "price": 3638.6240105818897,
+      "change24h": -9.824284828571104,
+      "changePercent24h": -0.27,
+      "marketCap": 438186084904
     },
     "XRP": {
       "symbol": "XRP",
-      "name": "XRP",
-      "price": 2.271743048614091,
-      "change24h": 0.039301154741023775,
-      "changePercent24h": 1.73,
-      "marketCap": 134187745315
+      "name": "Based XRP",
+      "price": 0.00004356172324576896,
+      "change24h": -0.000005902613499801695,
+      "changePercent24h": -13.55,
+      "marketCap": 2573112
     },
     "SOL": {
       "symbol": "SOL",
       "name": "Binance-Peg SOL",
-      "price": 152.06213008311968,
-      "change24h": 4.01444023419436,
-      "changePercent24h": 2.64,
-      "marketCap": 167268343
+      "price": 164.163983000686,
+      "change24h": -3.5131092362146803,
+      "changePercent24h": -2.14,
+      "marketCap": 180580381
     },
     "DOGE": {
       "symbol": "DOGE",
       "name": "Department Of Government Efficiency",
-      "price": 0.008807270445437092,
-      "change24h": 0.0005442893135280122,
-      "changePercent24h": 6.18,
-      "marketCap": 8807270
+      "price": 0.008498162557813424,
+      "change24h": -0.00040451253775191894,
+      "changePercent24h": -4.76,
+      "marketCap": 8498163
     },
     "TRX": {
       "symbol": "TRX",
       "name": "TRON",
-      "price": 0.28810555803079047,
-      "change24h": 0.004292772814658778,
-      "changePercent24h": 1.49,
-      "marketCap": 24881746309
+      "price": 0.33231166548321467,
+      "change24h": -0.001495402494674466,
+      "changePercent24h": -0.45,
+      "marketCap": 28699531562
     },
     "ADA": {
       "symbol": "ADA",
       "name": "Cardano",
-      "price": 0.5873165033207383,
-      "change24h": 0.012157451618739282,
-      "changePercent24h": 2.07,
-      "marketCap": 22275585231
+      "price": 0.7255765354074116,
+      "change24h": -0.017123606235614916,
+      "changePercent24h": -2.36,
+      "marketCap": 27570387781
     },
     "LINK": {
       "symbol": "LINK",
       "name": "Chainlink",
-      "price": 13.547180178996992,
-      "change24h": 0.33326063240332604,
-      "changePercent24h": 2.46,
-      "marketCap": 8492049489
+      "price": 16.40878236864548,
+      "change24h": -0.2871536914512959,
+      "changePercent24h": -1.75,
+      "marketCap": 10285844736
     },
     "LTC": {
       "symbol": "LTC",
-      "name": "Litecoin",
-      "price": 87.82288625103895,
-      "change24h": 0.6938008013832078,
-      "changePercent24h": 0.79,
-      "marketCap": 6635764409
+      "name": "Litecoin Token",
+      "price": 118.5550071023082,
+      "change24h": -3.9241707350864017,
+      "changePercent24h": -3.31,
+      "marketCap": 88168647
     },
     "DOT": {
       "symbol": "DOT",
-      "name": "Polkadot",
-      "price": 3.408745767991966,
-      "change24h": 0.06340267128465057,
-      "changePercent24h": 1.86,
-      "marketCap": 5159734866
+      "name": "Polkadot Token",
+      "price": 3.6268575291568856,
+      "change24h": -0.02321188818660407,
+      "changePercent24h": -0.64,
+      "marketCap": 57801072
     }
   }
 }

@@ -120,11 +120,11 @@ const articleSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  domain: {
+  domain: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Domain',
     required: true
-  },
+  }],
   
   // Статистика (включая фейковые значения)
   stats: {
@@ -355,7 +355,7 @@ articleSchema.statics.findByAuthor = function(authorId) {
 };
 
 articleSchema.statics.findByDomain = function(domainId) {
-  return this.find({ domain: domainId })
+  return this.find({ domain: { $in: [domainId] } })
     .populate('author', 'username profile')
     .sort({ publishedAt: -1 });
 };
@@ -367,6 +367,17 @@ articleSchema.statics.getPopular = function(limit = 10) {
   })
   .sort({ 'stats.views.total': -1 })
   .limit(limit);
+};
+
+articleSchema.statics.findByUserDomains = function(userDomainIds) {
+  return this.find({
+    domain: { $in: userDomainIds },
+    status: 'published',
+    publishedAt: { $lte: new Date() }
+  })
+  .populate('author', 'username profile')
+  .populate('domain', 'name url')
+  .sort({ publishedAt: -1 });
 };
 
 articleSchema.statics.searchArticles = function(query, filters = {}) {
@@ -387,7 +398,11 @@ articleSchema.statics.searchArticles = function(query, filters = {}) {
   }
   
   if (filters.domain) {
-    searchQuery.$and.push({ domain: filters.domain });
+    searchQuery.$and.push({ domain: { $in: [filters.domain] } });
+  }
+  
+  if (filters.userDomains && filters.userDomains.length > 0) {
+    searchQuery.$and.push({ domain: { $in: filters.userDomains } });
   }
   
   if (filters.author) {
