@@ -60,14 +60,16 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       /\.vercel\.app$/,
       /\.netlify\.app$/,
       'http://45.150.34.200',
-      'https://infocryptox.com'
+      'https://infocryptox.com',
+      'https://ozx.info'
     ]
   : [
       'http://localhost:3001', 
       'http://localhost:3000', 
       'http://localhost:5173', 
       'http://localhost:5174',
-      'https://infocryptox.com'
+      'https://infocryptox.com',
+      'https://ozx.info'
     ];
 
 app.use(cors({
