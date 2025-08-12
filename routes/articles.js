@@ -1142,7 +1142,7 @@ router.post('/', [
         commentsEnabled: settings.commentsEnabled !== undefined ? settings.commentsEnabled : true,
         likesEnabled: settings.likesEnabled !== undefined ? settings.likesEnabled : true,
         sharingEnabled: settings.sharingEnabled !== undefined ? settings.sharingEnabled : true,
-        indexationKey: settings.indexationKey || targetDomain.name.toLowerCase(),
+        indexationKey: settings.indexationKey || targetDomains[0].name.toLowerCase(),
         indexationBoost: settings.indexationBoost || 0
       }
     };
